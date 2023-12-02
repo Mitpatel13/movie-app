@@ -48,6 +48,7 @@ class _MoviePlayState extends BaseScreen<MoviePlay> {
             ?
         Chewie(controller:
         ChewieController(
+
             showControls: true,showOptions: true,autoInitialize: true,
 
             fullScreenByDefault: true,

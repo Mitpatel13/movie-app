@@ -32,8 +32,10 @@ class Globals {
   //static String baseUrl = "http://ec2-3-6-40-211.ap-south-1.compute.amazonaws.com:9000";
   static String socketBaseUrl = "http://ec2-3-6-40-211.ap-south-1.compute.amazonaws.com:8900/";
   static String baseUrl = "https://www.shinestreamlive.com/Api_controller";
+  // static String baseUrl = "https://crm.assastech.site/Api_controller";
   // static String baseUrl = "http://192.168.29.115/shinelive/Api_controller";
   static String imageBaseUrl = "https://shinestreamlive.com/";
+  // static String imageBaseUrl = "https://crm.assastech.site";
   // static String imageBaseUrl = "http://192.168.29.115/shinelive/admin/";
 
 }
