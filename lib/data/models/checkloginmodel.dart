@@ -2,6 +2,7 @@
 //
 //     final checkLoginModel = checkLoginModelFromJson(jsonString);
 
+import 'package:meta/meta.dart';
 import 'dart:convert';
 
 List<CheckLoginModel> checkLoginModelFromJson(String str) => List<CheckLoginModel>.from(json.decode(str).map((x) => CheckLoginModel.fromJson(x)));
@@ -9,15 +10,15 @@ List<CheckLoginModel> checkLoginModelFromJson(String str) => List<CheckLoginMode
 String checkLoginModelToJson(List<CheckLoginModel> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 
 class CheckLoginModel {
+  final String msg;
+  final bool status;
+  final List<UsersLogin> usersLogin;
+
   CheckLoginModel({
     required this.msg,
     required this.status,
     required this.usersLogin,
   });
-
-  String msg;
-  bool status;
-  List<UsersLogin> usersLogin;
 
   factory CheckLoginModel.fromJson(Map<String, dynamic> json) => CheckLoginModel(
     msg: json["msg"],
@@ -33,23 +34,26 @@ class CheckLoginModel {
 }
 
 class UsersLogin {
+  final String userId;
+  final String name;
+  final String mobileNo;
+  final String email;
+  final String subscriber;
+
   UsersLogin({
     required this.userId,
     required this.name,
     required this.mobileNo,
     required this.email,
+    required this.subscriber,
   });
-
-  String userId;
-  String name;
-  String mobileNo;
-  String email;
 
   factory UsersLogin.fromJson(Map<String, dynamic> json) => UsersLogin(
     userId: json["user_id"],
     name: json["name"],
     mobileNo: json["mobile_no"],
     email: json["email"],
+    subscriber: json["subscriber"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -57,5 +61,6 @@ class UsersLogin {
     "name": name,
     "mobile_no": mobileNo,
     "email": email,
+    "subscriber": subscriber,
   };
 }

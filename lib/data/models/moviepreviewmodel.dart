@@ -17,6 +17,7 @@ class MoviePreviewModel {
   String bannerLink;
   String bannerType;
   String ratings;
+  String free_movie;
 
   MoviePreviewModel({
     required this.videoId,
@@ -27,10 +28,12 @@ class MoviePreviewModel {
     required this.bannerLink,
     required this.bannerType,
     required this.ratings,
+    required this.free_movie,
   });
 
   factory MoviePreviewModel.fromJson(Map<String, dynamic> json) => MoviePreviewModel(
     videoId: json["video_id"],
+    free_movie: json["free_movie"],
     title: json["title"],
     description: json["description"],
     genreName: json["genre_name"],
@@ -49,5 +52,6 @@ class MoviePreviewModel {
     "banner_link": bannerLink,
     "banner_type": bannerType,
     "ratings": ratings,
+    "free_movie": free_movie,
   };
 }

@@ -22,15 +22,24 @@ import 'package:shinestreamliveapp/data/services/profileservice.dart';
 import 'package:shinestreamliveapp/data/services/seriesservice.dart';
 import 'package:shinestreamliveapp/data/services/videoplayerservice.dart';
 import '../cubit_bloc/download_data/download_bloc.dart';
+import '../cubit_bloc/episode_cubit/episode_cubit.dart';
 import '../cubit_bloc/login_cubit.dart';
 import '../cubit_bloc/movie_cubit/movie_cubit.dart';
+import '../cubit_bloc/shows/shws_cubit.dart';
+import '../cubit_bloc/shows_episode_cubit/shows_episode_cubit.dart';
 import '../cubit_bloc/view_all_movies_cubit/view_all_movie_cubit.dart';
 import '../data/api.dart';
 import '../data/repository/changepasswordrepository.dart';
+import '../data/repository/episoderepository.dart';
 import '../data/repository/loginrepository.dart';
+import '../data/repository/shows_episode_repository.dart';
+import '../data/repository/shows_repository.dart';
 import '../data/services/changepasswordservice.dart';
+import '../data/services/episodeservice.dart';
 import '../data/services/language_movie_service.dart';
 import '../data/services/loginservice.dart';
+import '../data/services/shoes_episode_service.dart';
+import '../data/services/shows_service.dart';
 
 
 final getIt = GetIt.instance;
@@ -57,6 +66,9 @@ void setup() {
   getIt.registerLazySingleton<SeriesRepository>(() => SeriesRepository());
   getIt.registerLazySingleton<PaymentRepository>(() => PaymentRepository());
   getIt.registerLazySingleton<LanguageByMovieRepository>(() => LanguageByMovieRepository());
+  getIt.registerLazySingleton<WebEpisodeSeriesRepository>(() => WebEpisodeSeriesRepository());
+  getIt.registerLazySingleton<ShowsRepository>(() => ShowsRepository());
+  getIt.registerLazySingleton<ShowsEpisodeSeriesRepository>(() => ShowsEpisodeSeriesRepository());
 
   ///service
   getIt.registerLazySingleton<LoginService>(() => LoginService());
@@ -69,6 +81,9 @@ void setup() {
   getIt.registerLazySingleton<SeriesService>(() => SeriesService());
   getIt.registerLazySingleton<PaymentService>(() => PaymentService());
   getIt.registerLazySingleton<LanguageMovieService>(() => LanguageMovieService());
+  getIt.registerLazySingleton<WebSeriesEpisodeService>(() => WebSeriesEpisodeService());
+  getIt.registerLazySingleton<ShowsService>(() => ShowsService());
+  getIt.registerLazySingleton<ShowsEpisodeService>(() => ShowsEpisodeService());
 
 
   ///cubit
@@ -83,5 +98,8 @@ void setup() {
   getIt.registerLazySingleton<PaymentCubit>(() => PaymentCubit());
   getIt.registerLazySingleton<MovieByLanguageCubit>(() => MovieByLanguageCubit());
   getIt.registerLazySingleton<DownloadCubit>(() => DownloadCubit());
+  getIt.registerLazySingleton<EpisodeCubit>(() => EpisodeCubit());
+  getIt.registerLazySingleton<ShowsCubit>(() => ShowsCubit());
+  getIt.registerLazySingleton<ShowsEpisodeCubit>(() => ShowsEpisodeCubit());
 
 }

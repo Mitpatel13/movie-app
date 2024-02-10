@@ -1,27 +1,29 @@
-import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:logger/logger.dart';
 import 'package:paytm_allinonesdk/paytm_allinonesdk.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shinestreamliveapp/basescreen/base_screen.dart';
 import 'package:shinestreamliveapp/cubit_bloc/payment/payment_cubit.dart';
-import 'package:shinestreamliveapp/ui/dashboard/homescreen.dart';
-import 'package:shinestreamliveapp/ui/payment/select_payment_method.dart';
+import 'package:shinestreamliveapp/ui/newHome/homescreen.dart';
+import 'package:shinestreamliveapp/utils/app_log.dart';
 
 import '../../data/models/planmodel.dart';
 import '../../data/models/tokenModel.dart';
+import '../../data/repository/paymentrepository.dart';
 import '../../di/locator.dart';
-import '../../payment_library/paytm_payment/all_in_one_for_paytm.dart';
+import '../../main.dart';
 import '../../utils/color_constants.dart';
 import '../../utils/shared_prefs.dart';
 import '../widget_components/app_bar_components.dart';
+import '../widget_components/bottomnavbar.dart';
 
 class Payment extends StatefulWidget {
-  const Payment({Key? key}) : super(key: key);
+  const Payment({super.key});
 
   @override
   State<Payment> createState() => _PaymentState();
@@ -32,9 +34,15 @@ class _PaymentState extends BaseScreen<Payment> {
   late TokenModel tokenModel;
   List<PlanModel> planModel = [];
   var paymentCubit = getIt<PaymentCubit>();
+  var paymentRepo = getIt<PaymentRepository>();
+
+  String paymentMethod = 'Unknown';
+
 
   @override
   void initState() {
+    checkLocation();
+
     paymentCubit.planDetails();
     // TODO: implement initState
     super.initState();
@@ -45,8 +53,7 @@ class _PaymentState extends BaseScreen<Payment> {
     return Scaffold(
       appBar: AppBarConstant(
         isLeading: true,
-
-          SizedBox(),(){Navigator.pop(context);
+(){Navigator.pop(context);
             // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(),));
       }),
       body:
@@ -56,50 +63,123 @@ class _PaymentState extends BaseScreen<Payment> {
             if (state is TokenLoaded) {
               tokenModel = state.response;
               print(tokenModel.res.body.txnToken);
+              AppLog.d(tokenModel.res);
 
               try {
                 var response = AllInOneSdk.startTransaction(
                     "CDHMjd82751472977989",
                     tokenModel.orderId,
-                    // "100",
                     tokenModel.amount.toString(),
                     tokenModel.res.body.txnToken,
-                    "",
+                    "https://securegw.paytm.in/theia/paytmCallback?ORDER_ID=${tokenModel.orderId}",
                     false,
                     false);
                 response.then((value) {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => Payment(),));
+                  if (value!['STATUS'] == 'TXN_SUCCESS') {
+                    FormData jsonBody =  FormData.fromMap({
+                      "TXNID": value['TXNID'],
+                      "CURRENCY": value['CURRENCY'],
+                      "CHECKSUMHASH": value['CHECKSUMHASH'],
+                      "MID": value['MID'],
+                      "ORDERID": value['ORDERID'],
+                      "RESPCODE": value['RESPCODE'],
+                      "RESPMSG": value['RESPMSG'],
+                      "STATUS": value['STATUS'],
+                      "TXNAMOUNT": value['TXNAMOUNT'],
+                      "BANKTXNID": value['BANKTXNID'],
+                    });
+                    paymentRepo.callbackApiForPaytmResponse(jsonBody);
+                    setState(() {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => ParentWidget(),));
+                      prefs.setString(SharedConstants.subScription,'1');
+
+                    });
+                    // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  ParentWidget()));
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => Payment(),));
+
+
+                    // Send the success response to the POST API
+                  }
                   print(value);
-                  print("Printing the value in the response API");
-                  print(value);
+                  AppLog.d("VALUE AFTER RESPONSE${value}");
+                  AppLog.d("VALUE AFTER RESPONSE ==== ${response}");
+
+
+
                   setState(() {
                     result = value.toString();
-                    final snackBar = SnackBar(
-                      content: Text(result.toString()),
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
                   });
                 }).catchError((onError) {
                   if (onError is PlatformException) {
-                    final snackBar = SnackBar(
-                      content: Text(onError.toString()),
-                    );
-                    Navigator.pop(context);
-
-
-                    // ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                  } else {
                     setState(() {
-                      print("Printing the result error in the response API");
-                      result = onError.toString();
-                      final snackBar = SnackBar(
-                        content: Text(result.toString()),
-                      );
-                      Navigator.pop(context);
-                      // ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  Payment()));
+                      // Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen(),));
+                      AppLog.d(onError.details['CHECKSUMHASH']);
+                      if (onError.message == 'User has not completed transaction.') {
+                        FormData jsonBody =  FormData.fromMap({
+                          "TXNID": onError.details['TXNID'],
+                          "CURRENCY": onError.details['CURRENCY'],
+                          "CHECKSUMHASH": onError.details['CHECKSUMHASH'],
+                          "MID": onError.details['MID'],
+                          "ORDERID": onError.details['ORDERID'],
+                          "RESPCODE": onError.details['RESPCODE'],
+                          "RESPMSG": onError.details['RESPMSG'],
+                          "STATUS": onError.details['STATUS'],
+                          "TXNAMOUNT": onError.details['TXNAMOUNT'],
+                          // "BANKTXNID": onError.details['BANKTXNID'],
+                        });
+                        paymentRepo.callbackApiForPaytmResponse(jsonBody);
+                        AppLog.d("STAUS FAIL BY USER");
+                      }
+                      result = onError.message??"NULL EROOR" + " \n  " + onError.details.toString();
+                      AppLog.d("REDSULE ====  ${result}");
 
+                    });
+                  } else {
+                    // Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen(),));
+                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  Payment()));
+                    setState(() {
+                      result = onError.toString();
+                      AppLog.d("REDSULE ${result}");
                     });
                   }
                 });
+                // response.then((value) {
+                //   print(value);
+                //   print("Printing the value in the response API");
+                //   print(value);
+                //   // setState(() {
+                //   //   result = value.toString();
+                //     AppLog.e("Result = ${result.toString()}");
+                //     // final snackBar = SnackBar(
+                //     //   content: Text(result.toString()),
+                //     // );
+                //     // ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                //   // });
+                // }).catchError((onError,t) {
+                //   if (onError is PlatformException) {
+                //     final snackBar = SnackBar(
+                //       content: Text(onError.toString()),
+                //     );
+                //     Navigator.pop(context);
+                //
+                //
+                //     // ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                //   } else {
+                //     setState(() {
+                //       print("Printing the result error in the response API");
+                //       result = onError.toString();
+                //       // final snackBar = SnackBar(
+                //       //   content: Text(result.toString()),
+                //       // );
+                //       Navigator.pop(context);
+                //       // ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                //
+                //     });
+                //   }
+                //   AppLog.e("TRACE ON PAYMRNT ::: $t");
+                // });
               } catch (err,t) {
                 Logger().e(err);
                 Logger().e(t);
@@ -111,7 +191,7 @@ class _PaymentState extends BaseScreen<Payment> {
               Navigator.pop(context);
             }
             if(state is PlanError){
-              Logger().d("TOKEN ERROR ${state}");
+              Logger().d("PLAN ERROR ${state}");
               Navigator.pop(context);
             }
             // TODO: implement listener
@@ -134,6 +214,7 @@ class _PaymentState extends BaseScreen<Payment> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Text(paymentMethod),
                         for(int i = 0; i < planModel.length; i++)
                           ...[
                             design(planModel[i]),
@@ -163,15 +244,128 @@ class _PaymentState extends BaseScreen<Payment> {
       ),
     );
   }
+  Future<void> checkLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        permission = await Geolocator.requestPermission();
+        if (permission != LocationPermission.whileInUse &&
+            permission != LocationPermission.always) {
+          setState(() {
+            paymentMethod = 'Location permission denied';
+          });
+          return;
+        }
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+
+      if (position.latitude >= 6.75 &&
+          position.latitude <= 35.75 &&
+          position.longitude >= 68.17 &&
+          position.longitude <= 97.25) {
+        setState(() {
+          paymentMethod = 'Paytm';
+        });
+      } else {
+        setState(() {
+          paymentMethod = 'PayPal';
+        });
+      }
+    } catch (e) {
+      print('Error getting location: $e');
+      setState(() {
+        paymentMethod = 'Unknown';
+      });
+    }
+  }
+
 
   design(PlanModel planModel) {
     return InkWell(
       onTap: () async{
-        SharedPreferences prefs = await SharedPreferences.getInstance();
         String? userID =prefs.getString("${SharedConstants.udid}");
-        // Navigator.push(context, MaterialPageRoute(builder: (context) => SelectPaymentMethodScreen(map:planModel),));
-        //
+        // paymentMethod == 'Paytm'?
         await paymentCubit.tokenApi(userID.toString(), planModel.planId, planModel.planAmount);
+            // :
+        // Navigator.push(context, MaterialPageRoute(builder: (context) =>
+        //     UsePaypal(
+        //
+        //
+        //       /// if testing purpose sandboxmode true and change client key and secrete key
+        //
+        //
+        //
+        //         sandboxMode: false,
+        //         clientId:
+        //         "Abm6DBQ-1lH7yMpPls-5GwhV5pFWG4tU4UjHZz53oMkbDa5freDZJe9vmb1x8VFjG-AC-PSkVjR6AgsJ",
+        //         // "Ac6HIRbAECXDyVWDPtVZejDqWng_Hbmgf-ujEk8vdzfPqoayMtlD2WHntaEacA6LMpKpFMlenCCydoVr",
+        //         secretKey:
+        //         "ELhWgFdh5NGfkVftghxDSojbHEl3HN0mrU32Hp7yiSTLIDKrwSU5uly2zFZeL8koswx9OV7U7fMGjVEN",
+        //         // "EFUtd5R8C6vYNDDnYKu3SP3gSmydb_c3yj5BImyJyChPkkh6H5WgCxWU5nBz-QkyXZcOFWB0UstVOfU1",
+        //         returnURL: "https://www.google.com/return",
+        //         cancelURL: "https://www.facebook.com/cancel",
+        //         transactions: [
+        //           {
+        //             "amount": {
+        //               "total": '1.00',
+        //               "currency": "USD",
+        //               "details": {
+        //                 "subtotal": '1.00',
+        //                 "shipping": '0',
+        //                 "shipping_discount": 0
+        //               }
+        //             },
+        //             "description":
+        //             "The payment transaction description.",
+        //             // "payment_options": {
+        //             //   "allowed_payment_method":
+        //             //       "INSTANT_FUNDING_SOURCE"
+        //             // },
+        //             "item_list": {
+        //               "items": [
+        //                 {
+        //                   "name": "A demo product",
+        //                   "quantity": 1,
+        //                   "price": '1.00',
+        //                   "currency": "USD"
+        //                 }
+        //               ],
+        //
+        //               // shipping address is not required though
+        //               // "shipping_address": {
+        //               //   "recipient_name": "Jane Foster",
+        //               //   "line1": "Travis County",
+        //               //   "line2": "",
+        //               //   "city": "Austin",
+        //               //   "country_code": "US",
+        //               //   "postal_code": "73301",
+        //               //   "phone": "+00000000",
+        //               //   "state": "Texas"
+        //               // },
+        //             }
+        //           }
+        //         ],
+        //         note: "Contact us for any questions on your order.",
+        //         onSuccess: (Map params) async {
+        //
+        //           print("onSuccess: $params");
+        //           Logger().f(params);
+        //           Logger().e("Sucess");
+        //
+        //         },
+        //         onError: (error,t) {
+        //           print("onError: $error");
+        //           Logger().e(error);
+        //           Logger().e(t);
+        //         },
+        //         onCancel: (params) {
+        //           print('cancelled: $params');
+        //           Logger().e("CANCELLED ::: ${params}");
+        //
+        //         }),));
         // Navigator.pop(context);
       },
       child: Center(

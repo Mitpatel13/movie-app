@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
-import 'package:shinestreamliveapp/data/models/checkloginmodel.dart';
 
 import '../../../di/locator.dart';
 
@@ -10,7 +8,6 @@ import '../api.dart';
 import '../apiendpoints.dart';
 import '../exceptions/dioexceptions.dart';
 import '../models/allmoviemodel.dart';
-import '../models/homebannermodel.dart';
 import '../models/moviepreviewmodel.dart';
 
 

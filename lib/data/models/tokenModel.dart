@@ -12,7 +12,7 @@ String tokenModelToJson(TokenModel data) => json.encode(data.toJson());
 class TokenModel {
   Res res;
   String orderId;
-  int amount;
+  String amount;
 
   TokenModel({
     required this.res,
@@ -81,7 +81,7 @@ class Body {
   };
 }
 
-class ResultInfo {
+class  ResultInfo {
   String resultStatus;
   String resultCode;
   String resultMsg;

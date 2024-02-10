@@ -1,6 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../utils/color_constants.dart';
 import '../../utils/font_size_constants.dart';
 
@@ -14,9 +13,9 @@ class CustomButton{
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
             shape:  RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(15.r),
             ),
-            padding: const EdgeInsets.all(15),
+            padding:  EdgeInsets.symmetric(vertical:13.w,),
             primary: buttoncolor,
             onPrimary: ColorConstantss.white),
         child: Text(
@@ -24,7 +23,7 @@ class CustomButton{
           style: TextStyle(
               color: textcolor,
               fontFamily: 'barlow_semibold',
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.bold,
               fontSize: FontSizeConstants.size14),
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:html/parser.dart';
 import 'package:shinestreamliveapp/basescreen/base_screen.dart';
 import 'package:shinestreamliveapp/cubit_bloc/profile_cubit/profile_cubit.dart';
@@ -16,7 +17,7 @@ import '../widget_components/app_bar_components.dart';
 
 class DisplayScreen extends StatefulWidget {
   String s;
-  DisplayScreen(this.s, {Key? key}) : super(key: key);
+  DisplayScreen(this.s, {super.key});
 
   @override
   State<DisplayScreen> createState() => _DisplayScreenState();
@@ -46,145 +47,118 @@ class _DisplayScreenState extends BaseScreen<DisplayScreen> {
     {
       profileCubit.getTerms();
     }
-    // TODO: implement initState
     super.initState();
   }
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-      
-          appBar:
-          // PreferredSize(preferredSize: Size.fromHeight(30),
-          //   child: Padding(
-          //     padding: const EdgeInsets.only(top: 10),
-          //     child: Row(
-          //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          //       children: [
-          //         IconButton(onPressed: (){
-          //           Navigator.pop(context);
-          //         }, icon: Icon(Icons.arrow_back_rounded)),
-          //         Image.asset("assets/mainlogo.jpg",width: 130,fit:BoxFit.fill),
-          //         Text("")
-          //       ],),
-          //   ),
-          // ),
-          AppBarConstant(
-              isLeading: true,
-              InkWell(
-                onTap: () {
+    return Scaffold(
+
+        appBar:
+        AppBarConstant(
+            isLeading: true,
+           (){Navigator.pop(context);}),
+        body: widget.s != "Help"?SingleChildScrollView(
+          child: MultiBlocListener(
+              listeners:[
+                BlocListener<ProfileCubit, ProfileState>(
+                  listener: (context, state) {
+                    if (state is RefundLoading) {
+                    }
+                  },
+
+                ),
+
+              ],
+              child:
+              BlocBuilder<ProfileCubit, ProfileState>(
+                builder: (context, state) {
+                  if(state is RefundLoaded)
+                  {
+                    refundData = state.response;
+                    return displayContent(refundData[0].refund);
+                  }
+                  else if(state is PolicyLoaded){
+                    policyData = state.response;
+                    return displayContent(policyData[0].policy);
+                  }
+                  else if(state is AboutLoaded){
+                    aboutData = state.response;
+                    return displayContent(aboutData[0].about??'');
+                  }
+                  else if(state is TermsLoaded){
+                    termsData = state.response;
+                    return displayContent(termsData[0].terms);
+                  }
+                  else{
+                    return Column(
+                      children: [
+                        SizedBox(height: MediaQuery.sizeOf(context).height / 3,),
+                        Center(child: CupertinoActivityIndicator(color: ColorConstantss.red,
+
+                          radius: 15,animating: true,)),
+                      ],
+                    );
+                  }
 
                 },
-                child: Padding(
-                    padding: const EdgeInsets.only(right: 15, top: 10),
-                    child: Icon(Icons.language_outlined,color: ColorConstantss.red,)
-                ),
-              ),(){Navigator.pop(context);}),
-          body: widget.s != "Help"?SingleChildScrollView(
-            child: MultiBlocListener(
-                listeners:[
-                  BlocListener<ProfileCubit, ProfileState>(
-                    listener: (context, state) {
-                      if (state is RefundLoading) {
-                        //LoaderWidget.showProgressIndicatorAlertDialog(context);
-                      }
-                    },
-      
-                  ),
-      
-                ],
-                child:
-                BlocBuilder<ProfileCubit, ProfileState>(
-                  builder: (context, state) {
-                    if(state is RefundLoaded)
-                    {
-                      refundData = state.response;
-                      return displayContent(refundData[0].refund);
-                    }
-                    else if(state is PolicyLoaded){
-                      policyData = state.response;
-                      return displayContent(policyData[0].policy);
-                    }
-                    else if(state is AboutLoaded){
-                      aboutData = state.response;
-                      return displayContent(aboutData[0].about);
-                    }
-                    else if(state is TermsLoaded){
-                      termsData = state.response;
-                      return displayContent(termsData[0].terms);
-                    }
-                    else{
-                      return Column(
-                        // mainAxisAlignment: MainAxisAlignment.center,
-                        // crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(height: MediaQuery.sizeOf(context).height / 3,),
-                          Center(child: CupertinoActivityIndicator(color: ColorConstantss.red,
-
-                            radius: 15,animating: true,)),
-                        ],
-                      );
-                    }
-      
-                  },
-                )
+              )
+          ),
+        ):
+        Container(
+          height: systemHeight(32, context),
+            decoration: BoxDecoration(
+              border: Border.all(width: 3, color: ColorConstantss.red),
+              borderRadius: BorderRadius.all(Radius.circular(18.r)),
             ),
-          ):Container(
-            height: systemHeight(32, context),
-              decoration: BoxDecoration(
-                border: Border.all(width: 3, color: ColorConstantss.red),
-                borderRadius: BorderRadius.all(Radius.circular(20)),
-              ),
-              margin: EdgeInsets.all(20),
-            child:Padding(
-              padding: const EdgeInsets.only(top:10.0,right:10.0,bottom: 10.0,left: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-      
-                  Padding(
-                    padding: EdgeInsets.only(top: systemHeight(2, context)),
-                    child: Text("Contact Us",
-                      style: TextStyle(
-                          color: ColorConstantss.white,
-                          fontFamily: 'barlow_semibold',
-                          fontWeight: FontWeight.w700,
-                          fontSize: FontSizeConstants.size17),),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: systemHeight(2, context)),
-                    child: Text("Shine Stream Live",
-                      style: TextStyle(
-                          color: ColorConstantss.white,
-                          fontFamily: 'barlow_semibold',
-                          fontWeight: FontWeight.w700,
-                          fontSize: FontSizeConstants.size17),),
-                  ),
-                  SizedBox(
-                    height: systemHeight(2, context),
-                  ),
-                  getText("Company Name : ", " Sunshine BroadCasting"),
-                  getText("Contact Person Name :", " Prasad"),
-                  getText("Mobile No :", " +91-9618114410"),
-                  getText("Email Id :", " appsun31@gmail.com"),
-      
-      
-      
-      
-      
-                ],
-              ),
-            )
+            margin: EdgeInsets.all(18.r),
+          child:Padding(
+            padding:  EdgeInsets.only(top:8.h,right:8.h,bottom: 8.h,left: 17.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                Padding(
+                  padding: EdgeInsets.only(top: systemHeight(2, context)),
+                  child: Text("Contact Us",
+                    style: TextStyle(
+                        color: ColorConstantss.white,
+                        fontFamily: 'barlow_semibold',
+                        fontWeight: FontWeight.w700,
+                        fontSize: FontSizeConstants.size17),),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(top: systemHeight(2, context)),
+                  child: Text("Shine Stream Live",
+                    style: TextStyle(
+                        color: ColorConstantss.white,
+                        fontFamily: 'barlow_semibold',
+                        fontWeight: FontWeight.w700,
+                        fontSize: FontSizeConstants.size17),),
+                ),
+                SizedBox(
+                  height: systemHeight(2, context),
+                ),
+                getText("Company Name : ", " Sunshine BroadCasting"),
+                getText("Contact Person Name :", " Prasad"),
+                getText("Mobile No :", " +91-9618114410"),
+                getText("Email Id :", " appsun31@gmail.com"),
+
+
+
+
+
+              ],
+            ),
           )
-      
-      
-      ),
+        )
+
+
     );
   }
 
   Widget displayContent(String text) {
     return Container(
-      margin: EdgeInsets.all(10),
+      margin: EdgeInsets.all(8.w),
       child: Text(_parseHtmlString(text),textAlign: TextAlign.justify,style: TextStyle(
         fontFamily: 'GeoBook',
         fontSize: 16,

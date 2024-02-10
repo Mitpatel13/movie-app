@@ -53,6 +53,7 @@ class ActionMovieModel {
      this.thumbnail,
      this.payPerView,
      this.videoPrice,
+    this.free_movie
   });
 
   String? videoId;
@@ -60,6 +61,7 @@ class ActionMovieModel {
   String? thumbnail;
   String? payPerView;
   String? videoPrice;
+  String? free_movie;
 
   factory ActionMovieModel.fromJson(Map<String, dynamic> json) => ActionMovieModel(
     videoId: json["video_id"]??"",
@@ -67,6 +69,7 @@ class ActionMovieModel {
     thumbnail: json["thumbnail"]??"",
     payPerView: json["pay_per_view"]??"",
     videoPrice: json["video_price"]??"",
+    free_movie: json["free_movie"]??"",
   );
 
   Map<String, dynamic> toJson() => {
@@ -75,6 +78,7 @@ class ActionMovieModel {
     "thumbnail": thumbnail,
     "pay_per_view": payPerView,
     "video_price": videoPrice,
+    "free_movie": free_movie,
   };
 }
 

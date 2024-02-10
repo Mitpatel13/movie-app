@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shinestreamliveapp/ui/dashboard/homescreen.dart';
-import 'package:shinestreamliveapp/ui/dashboard/moviedetails.dart';
-import 'package:shinestreamliveapp/ui/onboarding/otpscreen.dart';
 import 'package:shinestreamliveapp/ui/widget_components/bottomnavbar.dart';
 import '../main.dart';
 import '../utils/shared_prefs.dart';
@@ -14,8 +11,9 @@ class Splash extends StatefulWidget {
   State<Splash> createState() => _SplashState();
 }
 
-class _SplashState extends State<Splash> {
-  String accesstoken = "";
+class _SplashState extends State<Splash>
+{
+  String mobileNumber = "";
 
   @override
   void initState() {
@@ -28,18 +26,17 @@ class _SplashState extends State<Splash> {
     return SafeArea(
         child: Scaffold(
       body: Center(
-        child: Image.asset("assets/splashLogo.png",height: MediaQuery.sizeOf(context).height/4,),
-      ),
+            child: Image.asset("assets/splashLogo.png",height: MediaQuery.sizeOf(context).height/4,),
+          ),
     ));
   }
-
   void getSharedPreferenceData() async{
-    var mobileNumber = prefs.getString(SharedConstants.mobileNumber) ?? "";
-    print("sharedPref mobile number in splash");
+     mobileNumber = prefs.getString(SharedConstants.udid) ?? "";
+    print("sharedPref uid$mobileNumber number in splash");
     print(mobileNumber);
-    if(mobileNumber!="")
+    if(mobileNumber != "")
       {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  BottomNavigation(index: 0)));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  ParentWidget()));
       }
     else{
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  WelcomeScreen()));

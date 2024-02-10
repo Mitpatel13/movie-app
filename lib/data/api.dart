@@ -14,10 +14,10 @@ class Api {
   static Dio createDio() {
     var dio = Dio(BaseOptions(
         baseUrl: Globals.baseUrl,
-        connectTimeout: Duration(seconds: 5),
-        receiveTimeout: Duration(seconds: 3),
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 3),
         //15 SECONDS
-        sendTimeout: Duration(seconds: 3),
+        sendTimeout: const Duration(seconds: 3),
         contentType: 'application/json',
         responseType: ResponseType.json));
 
@@ -29,15 +29,10 @@ class Api {
 }
 
 class Globals {
-  //static String baseUrl = "http://ec2-3-6-40-211.ap-south-1.compute.amazonaws.com:9000";
-  static String socketBaseUrl = "http://ec2-3-6-40-211.ap-south-1.compute.amazonaws.com:8900/";
   static String baseUrl = "https://www.shinestreamlive.com/Api_controller";
-  // static String baseUrl = "https://crm.assastech.site/Api_controller";
-  // static String baseUrl = "http://192.168.29.115/shinelive/Api_controller";
+  // static String baseUrl = "http://developer.shinestreamlive.com/Api_controller";
   static String imageBaseUrl = "https://shinestreamlive.com/";
-  // static String imageBaseUrl = "https://crm.assastech.site";
-  // static String imageBaseUrl = "http://192.168.29.115/shinelive/admin/";
-
+  // static String imageBaseUrl = "http://developer.shinestreamlive.com/";
 }
 
 class AppInterceptors extends Interceptor {

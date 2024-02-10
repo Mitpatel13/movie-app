@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import '../../../di/locator.dart';
@@ -8,12 +7,13 @@ class LoginRepository {
   var loginService = getIt<LoginService>();
   Future<dynamic> checkLogin(var jsonBody,context) async {
     try {
+      print(jsonBody.toString());
       var response = await loginService.checkLogin(jsonBody,context);
 
       print("returning the response");
       return response;
     } catch (e) {
-      log("Login API EXCEPTION : $e");
+      log("Login API EXCEPTION : ${e}");
       throw e;
     }
   }

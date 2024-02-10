@@ -3,15 +3,15 @@ import 'package:dio/dio.dart';
 class DioExceptions implements Exception {
   late String message;
 
-  DioExceptions.fromDioError(DioError dioError) {
+  DioExceptions.fromDioError(DioException dioError) {
     switch (dioError.type) {
 
-      case DioErrorType.receiveTimeout:
+      case DioExceptionType.receiveTimeout:
         message = "Receive timeout in connection with API server";
         break;
 
 
-      case DioErrorType.sendTimeout:
+      case DioExceptionType.sendTimeout:
         message = "Send timeout in connection with API server";
         break;
 

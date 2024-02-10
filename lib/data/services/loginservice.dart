@@ -7,11 +7,10 @@ import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shinestreamliveapp/data/models/checkloginmodel.dart';
 import 'package:shinestreamliveapp/data/models/registermodel.dart';
-import 'package:shinestreamliveapp/ui/dashboard/homescreen.dart';
+import 'package:shinestreamliveapp/ui/onboarding/welcome_screen.dart';
 
 import '../../../di/locator.dart';
 import 'package:http/http.dart' as http;
-import '../../ui/widget_components/bottomnavbar.dart';
 import '../../utils/shared_prefs.dart';
 import '../api.dart';
 import '../apiendpoints.dart';
@@ -43,8 +42,11 @@ class LoginService {
         prefs.setString(SharedConstants.mobileNumber,_model[0].usersLogin[0].mobileNo);
         prefs.setString(SharedConstants.subScription,_model[0].status.toString());
         prefs.setString(SharedConstants.userName,_model[0].usersLogin[0].name.toString());
+        prefs.setString(SharedConstants.subScription,_model[0].usersLogin[0].subscriber);
+
 
         Logger().d("USER ${_model[0].usersLogin[0].name.toString()}");
+        Logger().d("SUBSCRIBER ${_model[0].usersLogin[0].subscriber}");
         Logger().d("USER LOGIN SET");
 
         return _model;
@@ -52,7 +54,7 @@ class LoginService {
 
 
 
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       log("Login Check Error log : "+e.toString());
       final errorMessage = DioExceptions.fromDioError(e).toString();
       throw errorMessage;
@@ -73,7 +75,9 @@ class LoginService {
         prefs.setString(SharedConstants.udid,_model[0].users[0].userId.toString());
         prefs.setString(SharedConstants.udid,_model[0].users[0].mobileNo.toString());
         prefs.setString(SharedConstants.userName,_model[0].users[0].name.toString());
-        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => BottomNavigation(index: 0,),), (route) => false);
+        prefs.setString(SharedConstants.subScription,_model[0].users[0].subscriber.toString());
+        // Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => BottomNavigation(index: 0,),), (route) => false);
+        Navigator.push(context, MaterialPageRoute(builder: (context) => WelcomeScreen(),));
 
 
         return _model;
@@ -110,7 +114,7 @@ class LoginService {
     try {
       final response = await
       http.get(Uri.parse(
-          'https://2factor.in/API/V1/2c1e3d96-f2e0-11ed-addf-0200cd936042/SMS/VERIFY/'+sessionId+'/'+otp+''));
+          'https://2factor.in/API/V1/2c1e3d96-f2e0-11ed-addf-0200cd936042/SMS/VERIFY/'+sessionId+'/'+otp));
       // var response = await dio.post(ApiEndPoints.otp);
       print(response.body);
       if (response.statusCode == 200) {

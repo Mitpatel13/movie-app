@@ -10,6 +10,7 @@ part 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final homeRepo = getIt<HomeRepository>();
+
   HomeCubit() : super(HBLoading());
 
   homeBanner() async{

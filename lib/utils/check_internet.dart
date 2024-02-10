@@ -17,7 +17,7 @@ Future<bool> onCheckInternet(context) async {
      return true;
    }
    else{
-     Logger().d(isConnected);
+     // Logger().d(isConnected);
      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("No Internet Connection"))) ;
 
      return false;

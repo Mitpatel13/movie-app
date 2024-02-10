@@ -38,18 +38,21 @@ class User {
     required this.name,
     required this.mobileNo,
     required this.userLogin,
+    required this.subscriber,
   });
 
   int userId;
   String name;
   String mobileNo;
   String userLogin;
+  String subscriber;
 
   factory User.fromJson(Map<String, dynamic> json) => User(
     userId: json["user_id"],
     name: json["name"],
     mobileNo: json["mobile_no"],
     userLogin: json["user_login"],
+    subscriber: json["subscriber"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -57,5 +60,6 @@ class User {
     "name": name,
     "mobile_no": mobileNo,
     "user_login": userLogin,
+    "subscriber": subscriber,
   };
 }

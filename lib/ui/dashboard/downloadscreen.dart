@@ -1,509 +1,323 @@
-
-// download_screen.dart
+import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shinestreamliveapp/ui/widget_components/app_bar_components.dart';
-import 'package:video_player/video_player.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:shinestreamliveapp/utils/app_log.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 
-import '../../cubit_bloc/download_data/download_bloc.dart';
+import '../../video_library/offline_video_player.dart';
 
-// class DownloadedVideosList extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     final directory = Directory(await getApplicationDocumentsDirectory().path);
-//     final videos = directory.listSync();
-//
-//     return ListView.builder(
-//     itemCount: videos.length,
-//     itemBuilder: (context, index) {
-//     return ListTile(
-//     title: Text('Video ${index + 1}'),
-//     onTap: () {
-//     Navigator.push(
-//     context,
-//     MaterialPageRoute(
-//     builder: (context) => VideoPlayerScreen(
-//     videoPath: videos[index].path,
-//     ),
-//     ),
-//     );
-//     },
-//     );
-//     },
-//     );
-//   }
-// }
-//
-// class VideoPlayerScreen extends StatelessWidget {
-//   final String videoPath;
-//
-//   const VideoPlayerScreen({required this.videoPath});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('Video Player'),
-//       ),
-//       body: VideoPlayerWidget(videoPath: videoPath),
-//     );
-//   }
-// }
-//
-// class VideoPlayerWidget extends StatefulWidget {
-//   final String videoPath;
-//
-//   const VideoPlayerWidget({required this.videoPath});
-//
-//   @override
-//   _VideoPlayerWidgetState createState() => _VideoPlayerWidgetState();
-// }
-//
-// class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
-//   late VideoPlayerController _controller;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _controller = VideoPlayerController.file(File(widget.videoPath))
-//       ..initialize().then((_) {
-//         setState(() {});
-//       });
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('Video Player'),
-//       ),
-//       body: _controller.value.isInitialized
-//           ? AspectRatio(
-//         aspectRatio: _controller.value.aspectRatio,
-//         child: VideoPlayer(_controller),
-//       )
-//           : Center(
-//         child: CircularProgressIndicator(),
-//       ),
-//     );
-//   }
-//
-//   @override
-//   void dispose() {
-//     super.dispose();
-//     _controller.dispose();
-//   }
-// }
-//
-// enum DownloadStatus {
-//   none,
-//   downloading,
-//   paused,
-//   completed,
-//   failed,
-// }
+class Video {
+  final int id;
+  final String title;
+  final String description;
+  final String videoPath;
 
-class DownloadScreen extends StatelessWidget {
+  Video({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.videoPath,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'videoPath': videoPath,
+    };
+  }
+}
+
+class DownloadScreen extends StatefulWidget {
+  const DownloadScreen({Key? key}) : super(key: key);
+
+  @override
+  _DownloadScreenState createState() => _DownloadScreenState();
+}
+
+class _DownloadScreenState extends State<DownloadScreen> {
+  final FlutterFFmpeg _flutterFFmpeg = FlutterFFmpeg();
+
+
+  late Database _db;
+  bool _isDatabaseOpen = false;
+
+  Future<void> _openDatabase() async {
+    _db = await openDatabase('videos.db', version: 1,
+        onCreate: (Database db, int version) async {
+          await db.execute(
+              'CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, description TEXT, videoPath TEXT)');
+        });
+    // Update the flag indicating the database is now open
+    _isDatabaseOpen = true;
+  }
+
+  Future<void> saveVideo(Video video) async {
+    try {
+      // Open or create the database if not already opened
+      if (!_isDatabaseOpen) await _openDatabase();
+      // Insert video data into the database
+      await _db.insert('videos', video.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+      AppLog.d('Videos saved: ${video.toMap()}');
+    } catch (e) {
+      AppLog.e('Error saving video: $e');
+    }
+  }
+
+  Future<void> clearDownloadedVideos() async {
+    try {
+      // Open or create the database if not already opened
+      if (!_isDatabaseOpen) await _openDatabase();
+      // Drop the videos table
+      await _db.execute('DROP TABLE IF EXISTS videos');
+      // Recreate the videos table
+      await _db.execute(
+          'CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, description TEXT, videoPath TEXT)');
+      AppLog.d('Downloaded videos cleared');
+    } catch (e) {
+      AppLog.e('Error clearing downloaded videos: $e');
+    }
+  }
+  int _progress = 0;
+  Future<String?> downloadAndSaveHLS(
+      String url, String title, Function(double)? progressCallback) async {
+    try {
+      final FlutterFFmpegConfig _flutterFFmpegConfig = FlutterFFmpegConfig();
+      final FlutterFFmpeg _flutterFFmpeg = FlutterFFmpeg();
+
+      // Get the temporary directory
+      final Directory tempDir = await getTemporaryDirectory();
+      final String tempPath = tempDir.path;
+
+      // Construct the output file path
+      final String outputPath = '$tempPath/$title.mp4';
+
+      // Attempt to delete the existing file
+      try {
+        await File(outputPath).delete();
+      } catch (e) {
+        // Handle any deletion errors, if necessary
+        print('Error deleting existing file: $e');
+      }
+
+      final String command = '-i $url -c copy $outputPath';
+
+      // Use a Completer to report completion
+      Completer<String?> completer = Completer<String?>();
+
+
+      // Start the FFmpeg execution asynchronously
+      int executionId = await _flutterFFmpeg.executeAsync(
+        command,
+            (execution) async {
+          if (execution.returnCode == 0) {
+            completer.complete(outputPath);
+          } else {
+            completer.complete(null);
+          }
+        },
+      );
+      return completer.future;
+    } catch (e, t) {
+      print('Error downloading and saving HLS: $e');
+      print('Trace: $t');
+      return null;
+    }
+  }
+
+
+
+
+
+
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:AppBarConstantWithOutBackIcon(SizedBox(height: 1,width: 1,)),
-      body:
-      // BlocBuilder<DownloadCubit, DownloadState>(
-      //   builder: (context, state) {
-      //     if (state.status == DownloadStatus.loading) {
-      //       return Center(child: CircularProgressIndicator(
-      //
-      //       ));
-      //     } else if (state.status == DownloadStatus.loaded) {
-      //       return
-      //         state.downloads.isNotEmpty? ListView.builder(
-      //         itemCount: state.downloads.length,
-      //         itemBuilder: (context, index) {
-      //           final item = state.downloads[index];
-      //           return ListTile(
-      //             title: Text(item.title),
-      //             subtitle: Text(item.description),
-      //             leading: Image.network(item.imagePath),
-      //             trailing: Text(item.status),
-      //             onTap: () {
-      //               // context.read<DownloadCubit>().startDownload(
-      //               //   item.title,
-      //               //   item.description,
-      //               //   item.url,
-      //               //   item.imagePath,
-      //               // );
-      //             },
-      //           );
-      //         },
-      //       ):SizedBox(child: Text("No Download Yet!!"),);
-      //     } else {
-      //       return Center(child: Text('Error loading data'));
-      //     }
-      //   },
-      // ),
-
-          /// for development
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      appBar: AppBar(
+        title: Text('Download and Play Videos'),
+      ),
+      body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Center(child: Text("No Downloads Yet!!")),
+          ElevatedButton(
+            onPressed: () async {
+              final String url =
+                  "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8";
+                  // "https://shinestreamlive.com/admin/file_folder/movies/GreenSignal/GreenSignal.m3u8";
+              final String title = "vide11o";
+              final videoPath = await downloadAndSaveHLS(url, title,(_) {});
+              if (videoPath != null) {
+                AppLog.d(videoPath);
+                final video = Video(
+                    id: 0,
+                    title: title,
+                    description: "",
+                    videoPath: videoPath);
+                await saveVideo(video);
+              }
+            },
+            child: Text('Download and Play'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VideoListScreen(),
+                ),
+              );
+            },
+            child: Text('Show List'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await clearDownloadedVideos();
+              setState(() {}); // Refresh UI
+            },
+            child: Text('Clear download list'),
+          ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                height: 100,
+                width: 100,
+                child: CircularProgressIndicator(
+                  value: _progress.toDouble() / 100,
+                  strokeWidth: 10,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                ),
+              ),
+              Text(
+                '${_progress.toInt()}%',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ],
-      )
-
+      ),
     );
   }
 }
 
+class VideoListScreen extends StatefulWidget {
+  @override
+  State<VideoListScreen> createState() => _VideoListScreenState();
+}
 
+class _VideoListScreenState extends State<VideoListScreen> {
+  late Future<List<Video>> videos;
 
-// import 'dart:io';
-//
-// import 'package:flutter/cupertino.dart';
-// import 'package:flutter/material.dart';
-// import 'package:logger/logger.dart';
-// import 'package:shinestreamliveapp/ui/dashboard/moviedetails.dart';
-// import 'package:shinestreamliveapp/utils/globle_var.dart';
-//
-// import '../../cubit_bloc/movie_cubit/movie_cubit.dart';
-// import '../../di/locator.dart';
-//
-// class DownloadScreen extends StatefulWidget {
-//   const DownloadScreen({Key? key}) : super(key: key);
-//
-//   @override
-//   State<DownloadScreen> createState() => _DownloadScreenState();
-// }
-//
-// class _DownloadScreenState extends State<DownloadScreen> {
-//   var movieCubit = getIt<MovieCubit>();
-//   List<File> videoList = [];
-//   @override
-//   void initState() {
-//     setState(() {
-//       downloadedVideos = videoList;
-//       Logger().d("FROM MOVIE ANYNOUMUS VIDEO LIST ${downloadedVideos.toList()}");
-//
-//
-//
-//     });
-//     super.initState();
-//   }
-//   @override
-//   Widget build(BuildContext context) {
-//     return SafeArea(child: Scaffold(body: Column(
-//       mainAxisAlignment: MainAxisAlignment.center,
-//       crossAxisAlignment: CrossAxisAlignment.center,
-//       children: [
-// videoList.isNotEmpty ?      Expanded(child: ListView.builder(itemBuilder: (context, index) =>
-//     Text(index.toString()),itemCount: videoList.length,)) : Center(child: Text("No Downloads Yet!!"),)
-//     ],),));
-//   }
-// }
+  @override
+  void initState() {
+    super.initState();
+    videos = getDownloadedVideos();
+  }
 
+  Future<List<Video>> getDownloadedVideos() async {
+    try {
+      final Database db = await openDatabase('videos.db');
+      final List<Map<String, dynamic>> maps =
+      await db.query('videos'); // Change table name to 'videos'
+      AppLog.d(maps.toList());
+      return List.generate(maps.length, (i) {
+        return Video(
+          id: maps[i]['id'],
+          title: maps[i]['title'],
+          description: maps[i]['description'],
+          videoPath: maps[i]['videoPath'],
+        );
+      });
+    } catch (e) {
+      AppLog.e('Error getting downloaded videos: $e');
+      return [];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Downloaded Videos'),
+      ),
+      body: FutureBuilder<List<Video>>(
+        future: videos,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text("No downloaded videos"));
+          } else {
+            return ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(snapshot.data![index].title),
+                  onTap: () {
+                    AppLog.d(snapshot.data![index].videoPath);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OfflineMoviePlay(
+                            snapshot.data![index].videoPath),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          }
+        },
+      ),
+    );
+  }
+}
+
+// class VideoPlayerScreen extends StatelessWidget {
+//   final String videoPath;
 //
-// class DownloadScreen extends StatefulWidget with WidgetsBindingObserver {
-//   @override
-//   _DownloadScreenState createState() => _DownloadScreenState();
-// }
-//
-// class _DownloadScreenState extends State<DownloadScreen> {
-//   ReceivePort _port = ReceivePort();
-//   List<Map> downloadsListMaps = [];
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     task();
-//     _bindBackgroundIsolate();
-//     FlutterDownloader.registerCallback((id, status, progress, ) =>downloadCallback(id,status as DownloadTaskStatus?,progress,) ,);
-//
-//
-//   }
-//
-//   @override
-//   void dispose() {
-//     _unbindBackgroundIsolate();
-//     super.dispose();
-//   }
-//
-//   void _bindBackgroundIsolate() {
-//     bool isSuccess = IsolateNameServer.registerPortWithName(
-//         _port.sendPort, 'downloader_send_port');
-//     if (!isSuccess) {
-//       _unbindBackgroundIsolate();
-//       _bindBackgroundIsolate();
-//       return;
-//     }
-//     _port.listen((dynamic data) {
-//       String id = data[0];
-//       DownloadTaskStatus status = data[1];
-//       int progress = data[2];
-//       String url = data[3];
-//       var task = downloadsListMaps.where((element) => element['id'] == id);
-//       for (var element in task) {
-//         element['progress'] = progress;
-//         element['status'] = status;
-//         // element['url'] = url;
-//         // Logger().d("RECIEVED URL${url}");
-//         setState(() {});
-//       }
-//     });
-//   }
-//
-//   static void downloadCallback(
-//       String? id, DownloadTaskStatus? status, int? progress ) {
-//     final SendPort? send =
-//     IsolateNameServer.lookupPortByName('downloader_send_port');
-//     send?.send([id, status, progress]);
-//   }
-//
-//   void _unbindBackgroundIsolate() {
-//     IsolateNameServer.removePortNameMapping('downloader_send_port');
-//   }
-//
-//   Future task() async {
-//     List<DownloadTask>? getTasks = await FlutterDownloader.loadTasks();
-//     getTasks?.forEach((_task) {
-//       Map _map = Map();
-//       _map['status'] = _task.status;
-//       _map['progress'] = _task.progress;
-//       _map['id'] = _task.taskId;
-//       _map['filename'] = _task.filename;
-//       _map['savedDirectory'] = _task.savedDir;
-//       downloadsListMaps.add(_map);
-//     });
-//     setState(() {});
-//   }
+//   VideoPlayerScreen({required this.videoPath});
 //
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
 //       appBar: AppBar(
-//         title: const Text('Offline Downloads'),
+//         title: Text("Video Player"),
 //       ),
-//       body:BlocBuilder<DownloadCubit, DownloadState>(
-//     builder: (context, state) {
-//     if (state.isLoading) {
-//     return Center(child: CircularProgressIndicator());
-//     } else if (state.isError) {
-//     return Center(child: Text('Error loading data'));
-//     } else {
-//     return state.items.isNotEmpty? ListView.builder(
-//     itemCount: state.items.length,
-//     itemBuilder: (context, index) {
-//     final item = state.items[index];
-//     return InkWell(
-//       onTap: (){
-//         Navigator.push(context, MaterialPageRoute(builder: (context) =>
-//             MoviePlay(state.items[index].videoLink)
-//           ,));
-//      print(state.items[index].videoLink);
-//       }
-//       ,
-//
-//       child: ListTile(
-//       title: Text(item.title),
-//       // subtitle: Text(item.description),
-//       // leading: Image.network(item.imageUrl),
+//       body: Center(
+//         child: FutureBuilder(
+//           future: VideoPlayerController.file(File(videoPath)).initialize(),
+//           builder: (context, snapshot) {
+//             if (snapshot.connectionState == ConnectionState.done) {
+//               final VideoPlayerController controller =
+//               VideoPlayerController.file(File(videoPath))..initialize();
+//               return AspectRatio(
+//                 aspectRatio: controller.value.aspectRatio,
+//                 child: VideoPlayer(controller),
+//               );
+//             } else {
+//               return CircularProgressIndicator();
+//             }
+//           },
+//         ),
 //       ),
 //     );
-//     },
-//     ): Center(child: Text("No Download yet!!"),);
-//     }
-//     },
-//       // downloadsListMaps.length == 0
-//       //     ? const Center(child: Text("No Downloads yet"))
-//       //     : Container(
-//       //   child: ListView.builder(
-//       //     itemCount: downloadsListMaps.length,
-//       //     itemBuilder: (BuildContext context, int i) {
-//       //       Map _map = downloadsListMaps[i];
-//       //       String _filename = _map['filename'];
-//       //       int _progress = _map['progress'];
-//       //       DownloadTaskStatus _status = _map['status'];
-//       //       String _id = _map['id'];
-//       //       String _savedDirectory = _map['savedDirectory'];
-//       //       List<FileSystemEntity> _directories =
-//       //       Directory(_savedDirectory).listSync(followLinks: true);
-//       //       FileSystemEntity? file =
-//       //       _directories.isNotEmpty ? _directories.first : null;
-//       //       return GestureDetector(
-//       //         onTap: () {
-//       //           if (_status == DownloadTaskStatus.complete) {
-//       //             showDialogue(file as File);
-//       //           }
-//       //         },
-//       //         child: Card(
-//       //           elevation: 10,
-//       //           shape: const RoundedRectangleBorder(
-//       //               borderRadius: BorderRadius.all(Radius.circular(8))),
-//       //           child: Column(
-//       //             mainAxisAlignment: MainAxisAlignment.start,
-//       //             crossAxisAlignment: CrossAxisAlignment.start,
-//       //             children: <Widget>[
-//       //               InkWell(
-//       //                 onTap: (){
-//       //                   if (_status == DownloadTaskStatus.complete) {
-//       //                     Navigator.push(context, MaterialPageRoute(builder: (context) => MoviePlay("movieLink"),));
-//       //                   }
-//       //
-//       //                 },
-//       //                 child: ListTile(
-//       //                   isThreeLine: false,
-//       //                   title: Text(_filename),
-//       //                   subtitle: downloadStatus(_status),
-//       //                   trailing: SizedBox(
-//       //                     child: buttons(_status, _id, i),
-//       //                     width: 60,
-//       //                   ),
-//       //                 ),
-//       //               ),
-//       //               // _status == DownloadTaskStatus.complete
-//       //               //     ? Container()
-//       //               //     : const SizedBox(height: 5),
-//       //               _status == DownloadTaskStatus.complete
-//       //                   ? Container()
-//       //                   : Padding(
-//       //                 padding: const EdgeInsets.all(8.0),
-//       //                 child: Column(
-//       //                   mainAxisAlignment: MainAxisAlignment.end,
-//       //                   crossAxisAlignment: CrossAxisAlignment.end,
-//       //                   children: <Widget>[
-//       //                     Text('$_progress%'),
-//       //                     Row(
-//       //                       children: <Widget>[
-//       //                         Expanded(
-//       //                           child: LinearProgressIndicator(
-//       //                             value: _progress / 100,
-//       //                           ),
-//       //                         ),
-//       //                       ],
-//       //                     ),
-//       //                   ],
-//       //                 ),
-//       //               ),
-//       //               const SizedBox(height: 10)
-//       //             ],
-//       //           ),
-//       //         ),
-//       //       );
-//       //     },
-//       //   ),
-//       // ),
-//     ));
 //   }
-//
-//   Widget downloadStatus(DownloadTaskStatus _status) {
-//     return _status == DownloadTaskStatus.canceled
-//         ? const Text('Download canceled')
-//         : _status == DownloadTaskStatus.complete
-//         ? const Text('Download completed')
-//         : _status == DownloadTaskStatus.failed
-//         ? const Text('Download failed')
-//         : _status == DownloadTaskStatus.paused
-//         ? const Text('Download paused')
-//         : _status == DownloadTaskStatus.running
-//         ? const Text('Downloading..')
-//         : const Text('Download waiting');
-//   }
-//
-//   Widget buttons(DownloadTaskStatus _status, String taskid, int index) {
-//     void changeTaskID(String taskid, String newTaskID) {
-//       Map task = downloadsListMaps.firstWhere(
-//             (element) => element['taskId'] == taskid,
-//         // orElse: () => dynami,
-//       );
-//       task['taskId'] = newTaskID;
-//       setState(() {});
-//     }
-//
-//     return _status == DownloadTaskStatus.canceled
-//         ? GestureDetector(
-//       child: const Icon(Icons.cached, size: 20, color: Colors.green),
-//       onTap: () {
-//         FlutterDownloader.retry(taskId: taskid).then((newTaskID) {
-//           changeTaskID(taskid, newTaskID!);
-//         });
-//       },
-//     )
-//         : _status == DownloadTaskStatus.failed
-//         ?
-//     GestureDetector(
-//       child:
-//       const Icon(Icons.delete, size: 20, color: Colors.red),
-//       onTap: () {
-//         downloadsListMaps.removeAt(index);
-//         FlutterDownloader.remove(
-//             taskId: taskid, shouldDeleteContent: true);
-//         setState(() {});
-//       },
-//     )
-//     // GestureDetector(
-//     //   child: const Icon(Icons.cached, size: 20, color: Colors.green),
-//     //   onTap: () {
-//     //     FlutterDownloader.retry(taskId: taskid).then((newTaskID) {
-//     //       changeTaskID(taskid, newTaskID??"");
-//     //     });
-//     //   },
-//     // )
-//         : _status == DownloadTaskStatus.paused
-//         ? Row(
-//       mainAxisSize: MainAxisSize.min,
-//       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//       children: <Widget>[
-//         GestureDetector(
-//           child: const Icon(Icons.play_arrow,
-//               size: 20, color: Colors.blue),
-//           onTap: () {
-//             FlutterDownloader.resume(taskId: taskid).then(
-//                   (newTaskID) => changeTaskID(taskid, newTaskID!),
-//             );
-//           },
-//         ),
-//         GestureDetector(
-//           child: const Icon(Icons.close, size: 20, color: Colors.red),
-//           onTap: () {
-//             FlutterDownloader.cancel(taskId: taskid);
-//           },
-//         )
-//       ],
-//     )
-//         : _status == DownloadTaskStatus.running
-//         ? Row(
-//       mainAxisSize: MainAxisSize.min,
-//       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//       children: <Widget>[
-//         GestureDetector(
-//           child: const Icon(Icons.pause,
-//               size: 20, color: Colors.green),
-//           onTap: () {
-//             FlutterDownloader.pause(taskId: taskid);
-//           },
-//         ),
-//         GestureDetector(
-//           child:
-//           const Icon(Icons.close, size: 20, color: Colors.red),
-//           onTap: () {
-//             FlutterDownloader.cancel(taskId: taskid);
-//           },
-//         )
-//       ],
-//     )
-//         : _status == DownloadTaskStatus.complete
-//         ? GestureDetector(
-//       child:
-//       const Icon(Icons.delete, size: 20, color: Colors.red),
-//       onTap: () {
-//         downloadsListMaps.removeAt(index);
-//         FlutterDownloader.remove(
-//             taskId: taskid, shouldDeleteContent: true);
-//         setState(() {});
-//       },
-//     )
-//         : Container();
-//   }
-//
 // }
+
+
+
+
+
+

@@ -1,19 +1,9 @@
-import 'dart:convert';
 import 'dart:developer';
-import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
-import 'package:shinestreamliveapp/data/models/checkloginmodel.dart';
-import 'package:shinestreamliveapp/data/models/policymodel.dart';
-import 'package:shinestreamliveapp/data/services/homeservice.dart';
-
 import '../../../di/locator.dart';
-import '../services/loginservice.dart';
-
-import '../exceptions/dioexceptions.dart';
 import '../services/movieService.dart';
 
 class MovieRepository {
-  // var loginService = getIt<LoginService>();
   var movieService = getIt<MovieService>();
   Future<dynamic> moviePreview(var jsonBody) async {
     try {

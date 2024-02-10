@@ -10,16 +10,16 @@ String aboutModelToJson(List<AboutModel> data) => json.encode(List<dynamic>.from
 
 class AboutModel {
   AboutModel({
-    required this.aboutId,
-    required this.about,
+     this.aboutId,
+     this.about,
   });
 
-  String aboutId;
-  String about;
+  String? aboutId;
+  String? about;
 
   factory AboutModel.fromJson(Map<String, dynamic> json) => AboutModel(
-    aboutId: json["about_id"],
-    about: json["about"],
+    aboutId: json["about_id"]??"",
+    about: json["about"]??'',
   );
 
   Map<String, dynamic> toJson() => {

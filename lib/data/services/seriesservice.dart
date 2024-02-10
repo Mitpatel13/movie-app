@@ -1,16 +1,12 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
-import 'package:shinestreamliveapp/data/models/checkloginmodel.dart';
 import 'package:shinestreamliveapp/data/models/seriesbannermodel.dart';
-
 import '../../../di/locator.dart';
 
 import '../api.dart';
 import '../apiendpoints.dart';
 import '../exceptions/dioexceptions.dart';
-import '../models/homebannermodel.dart';
 import '../models/seriesmodel.dart';
 
 
@@ -37,7 +33,8 @@ class SeriesService {
   Future seriesList() async {
 
     try {
-      var response = await dio.get(ApiEndPoints.seriesList);
+      print("==== sweris list get data calling ");
+      var response = await dio.get(ApiEndPoints.dynamicSeriesApi);
       print("Printing the data of the response");
       print(response.data);
       if (response.statusCode == 200) {

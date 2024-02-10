@@ -1,23 +1,44 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:shinestreamliveapp/data/models/aboutmodel.dart';
-import 'package:shinestreamliveapp/data/models/checkloginmodel.dart';
 import 'package:shinestreamliveapp/data/models/refundmodel.dart';
 import 'package:shinestreamliveapp/data/models/termsmodel.dart';
+import 'package:shinestreamliveapp/utils/app_log.dart';
 
 import '../../../di/locator.dart';
 
 import '../api.dart';
 import '../apiendpoints.dart';
 import '../exceptions/dioexceptions.dart';
-import '../models/homebannermodel.dart';
 import '../models/policymodel.dart';
 
 
 class ProfileService {
   var dio = getIt<Api>().dio;
+  Future logoutDeviceDecrement(var jsonBody,context) async {
+
+    try {
+      var response = await dio.post(ApiEndPoints.logoutDeviceDecrement,data: jsonBody);
+      print("Printing the data of the response");
+      print(response.data);
+      print(response.statusCode);
+      if (response.statusCode == 200) {
+        // ScaffoldMessenger.of(context).showSnackBar( SnackBar(content: Text("Logout Successfully")));
+        AppLog.d("USER LOGOUT SUCCESS");
+
+        return response;
+      }
+
+
+
+    } on DioException catch (e,t) {
+      log("Login Check Error log : "+e.toString());
+      log("Login Check Error log : "+t.toString());
+      final errorMessage = DioExceptions.fromDioError(e).toString();
+      throw errorMessage;
+    }
+  }
   Future getRefund() async {
 
     try {

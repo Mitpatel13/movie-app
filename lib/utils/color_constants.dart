@@ -1,4 +1,3 @@
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:hexcolor/hexcolor.dart';
@@ -21,5 +20,11 @@ class ColorConstantss{
   static Color grayText = HexColor("#9095A0FF");
   static Color grey = Colors.grey;
   static Color blue = Colors.blueAccent;
+
+
+  /// color for new ui
+  static Color newGrey = HexColor("#9A9A9A");
+  static Color formFeildBackColor = HexColor("#F0EDFFCC");
+  static Color serchFilledColors = HexColor("#D9D9D933");
 
 }

@@ -1,18 +1,9 @@
-import 'dart:convert';
 import 'dart:developer';
-import 'package:dio/dio.dart';
-import 'package:shinestreamliveapp/data/models/checkloginmodel.dart';
-import 'package:shinestreamliveapp/data/models/policymodel.dart';
-import 'package:shinestreamliveapp/data/services/homeservice.dart';
 
 import '../../../di/locator.dart';
-import '../services/loginservice.dart';
-
-import '../exceptions/dioexceptions.dart';
 import '../services/profileservice.dart';
 
 class ProfileRepository {
-  // var loginService = getIt<LoginService>();
   var profileService = getIt<ProfileService>();
   Future<dynamic> getRefund() async {
     try {
@@ -29,6 +20,16 @@ class ProfileRepository {
       return response;
     } catch (e) {
       log("Get Policy API EXCEPTION : $e");
+      throw e;
+    }
+  }
+  Future<dynamic> logoutDeviceDecrement(jsonBody,context) async {
+    try {
+      var response = await profileService.logoutDeviceDecrement(jsonBody, context);
+      return response;
+    } catch (e,t) {
+      log("Get LOgout Decrement API EXCEPTION : $e");
+      log("Get LOgout Decrement API TRACE : $t");
       throw e;
     }
   }

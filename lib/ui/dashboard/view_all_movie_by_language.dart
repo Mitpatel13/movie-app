@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:logger/logger.dart';
 import 'package:shinestreamliveapp/basescreen/base_screen.dart';
-import 'package:shinestreamliveapp/cubit_bloc/movie_cubit/movie_cubit.dart';
 import 'package:shinestreamliveapp/ui/widget_components/app_bar_components.dart';
 import 'package:shinestreamliveapp/ui/widget_components/catched_image.dart';
 
@@ -44,15 +44,7 @@ getInitArgument();
     return Scaffold(
       appBar: AppBarConstant(
           isLeading: true,
-          InkWell(
-            onTap: () {},
-            child: Padding(
-                padding: const EdgeInsets.only(right: 15, top: 10),
-                child: Icon(
-                  Icons.language_outlined,
-                  color: ColorConstantss.red,
-                )),
-          ),(){Navigator.pop(context);}),
+         (){Navigator.pop(context);}),
     body:BlocBuilder<MovieByLanguageCubit, LanguageMovieState>(
       builder: (context, state) {
         if (state is LanguageMovieLoading) {
@@ -60,19 +52,18 @@ getInitArgument();
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-            Center(child: CupertinoActivityIndicator(color: ColorConstantss.red,radius: 15,),)
+            Center(child: CupertinoActivityIndicator(color: ColorConstantss.red,radius: 15.r,),)
           ],);
-            // Center(child: Text('Press the button to fetch data.'));
         }
         if (state is LanguageMovieLoaded) {
           allMovieListByLanguage =state.movies;
           Logger().d(allMovieListByLanguage.map((e) => e.title));
           Logger().d(allMovieListByLanguage.length);
           // Logger().w(allMovieListByLanguage);
-          return allMovieListByLanguage.length !=0?
+          return allMovieListByLanguage.isNotEmpty?
             // Center(child: Text("data"),);
             Padding(
-                padding: const EdgeInsets.all(10),
+                padding:  EdgeInsets.all(10.w),
                 child: Column(
                   children: [
                     Expanded(
@@ -82,12 +73,15 @@ getInitArgument();
                           physics: ScrollPhysics(),
                           shrinkWrap: true,
                   gridDelegate:
-                  SliverGridDelegateWithFixedCrossAxisCount(
+                  SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent:130.h,
+                      mainAxisExtent: 140.h,
+                  // SliverGridDelegateWithFixedCrossAxisCount(
                     // maxCrossAxisExtent: 250,
-                      childAspectRatio: 0.7,
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 10,
-                      // mainAxisSpacing: 20
+                    //   childAspectRatio: 0.5.h,
+                    //   crossAxisCount: 3,
+                      crossAxisSpacing: 10.w,
+                      mainAxisSpacing: 10.w
                   ),
                   itemCount: allMovieListByLanguage.length,
                   itemBuilder: (BuildContext ctx, index) {
@@ -103,39 +97,33 @@ getInitArgument();
                         // mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          InkWell(
-                            onTap:(){
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => MovieDetails(allMovieListByLanguage[index].videoId??""),
-                                  ));
-                            },
-                            child: CatchImageWithOutWidth(imageUrl: "${Globals.imageBaseUrl}${allMovieListByLanguage[index].thumbnail!}",
-                                height:  systemHeight(15, context), isFree: false, )
-                            // Container(
-                            //
-                            //
-                            //   height: systemHeight(15, context),
-                            //   // width: 80,
-                            //   decoration: BoxDecoration(
-                            //       borderRadius: BorderRadius.circular(8),
-                            //       image: DecorationImage(fit: BoxFit.fill,image:
-                            //       NetworkImage(
-                            //       "${Globals.imageBaseUrl}"+ allMovieListByLanguage[index].thumbnail!,),
-                            //       )),
-                            // ),
+                          Container(
+                            height:125.h,
+                            // height:systemHeight(14.h, context) ,
+
+                            child: InkWell(
+                              onTap:(){
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => MovieDetails(allMovieListByLanguage[index].videoId??""),
+                                    ));
+                              },
+                              child: CatchImageWithOutWidth(imageUrl: "${Globals.imageBaseUrl}${allMovieListByLanguage[index].thumbnail!}",
+                                   isFree: "0", )
+
+                            ),
                           ),
-                          SizedBox(height: 5.0),
+                          SizedBox(height:1.h),
                           Expanded(
                             child: Text(
                               // "modelmodelmodelmodascefelmoddffasfwel",
                               allMovieListByLanguage[index].title??"",
-                              maxLines: 2,softWrap: true,
+                              maxLines: 1,softWrap: false,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontFamily: 'GeoBook',
-                                fontSize: 12,
+                                fontSize: 10.sp,
                                 color: ColorConstantss.white,
                                 fontWeight: FontWeight.normal,
                               ),
@@ -144,58 +132,8 @@ getInitArgument();
                         ],
                       ),
                     );
-                    //   Container(
-                    //   // color: ColorConstants.red,
-                    //   // height: 300,
-                    //   // height: systemHeight(20, context),
-                    //   // width: 100,
-                    //   padding: EdgeInsets.symmetric(horizontal: 15),
-                    //   child:
-                    //   Column(
-                    //     mainAxisSize: MainAxisSize.min,
-                    //     // mainAxisAlignment: MainAxisAlignment.start,
-                    //     crossAxisAlignment: CrossAxisAlignment.start,
-                    //     children: [
-                    //       InkWell(
-                    //         onTap:(){
-                    //           Navigator.push(
-                    //               context,
-                    //               MaterialPageRoute(
-                    //                 builder: (context) => MovieDetails(allMovieListByLanguage[index].videoId??""),
-                    //               ));
-                    //         },
-                    //         child: Container(
-                    //
-                    //
-                    //           height: systemHeight(15, context),
-                    //           // width: 80,
-                    //           decoration: BoxDecoration(
-                    //               borderRadius: BorderRadius.circular(8),
-                    //               image: DecorationImage(fit: BoxFit.fill,image:
-                    //               NetworkImage("${Globals.imageBaseUrl}"+ allMovieListByLanguage[index].thumbnail!,),
-                    //               )),
-                    //         ),
-                    //       ),
-                    //       SizedBox(height: 5.0),
-                    //       Expanded(
-                    //         child: Text(
-                    //           // "modelmodelmodelmodascefelmoddffasfwel",
-                    //           allMovieListByLanguage[index].title??"",
-                    //           maxLines: 2,softWrap: true,
-                    //           overflow: TextOverflow.ellipsis,
-                    //           style: TextStyle(
-                    //             fontFamily: 'GeoBook',
-                    //             fontSize: 12,
-                    //             color: ColorConstantss.white,
-                    //             fontWeight: FontWeight.normal,
-                    //           ),
-                    //         ),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // );
                   }))])) :
-          Column(crossAxisAlignment: CrossAxisAlignment.center,
+          const Column(crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Center(child: Text("No Movie Found Yet!!!"),)
@@ -204,7 +142,7 @@ getInitArgument();
 
         } else {
           Logger().e("Unkonw state");
-          return Center(child: Text('No Movie Found Yet!!!'));
+          return const Center(child: Text('No Movie Found Yet!!!'));
         }
       },
     ),

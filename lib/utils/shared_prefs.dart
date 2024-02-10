@@ -12,4 +12,6 @@ class SharedConstants{
   static String settingsUserNumber  = "settingsUserNumber";
   static String deleteUdid  = "deleteUdid";
   static String fmc  = "fcm";
+  static String watchedVideoTime = "watchedVideoTime";
+  // static List<String> downloadedVideos = "downloaded_videos" as List<String>;
 }

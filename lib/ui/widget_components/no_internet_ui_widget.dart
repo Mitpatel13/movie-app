@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shinestreamliveapp/utils/check_internet.dart';
-
 import 'app_bar_components.dart';
 class NoInternetScreen extends StatefulWidget {
   const NoInternetScreen({super.key});
@@ -12,19 +10,14 @@ class NoInternetScreen extends StatefulWidget {
 class _NoInternetScreenState extends State<NoInternetScreen> {
   @override
   void initState() {
-    // onCheckInternet(setState, context);
-    // TODO: implement initState
     super.initState();
   }
   @override
   Widget build(BuildContext context) {
 
     return SafeArea(child: Scaffold(
-      appBar: AppBarConstant(isLeading: false,
-          InkWell(
-            onTap: () {},
-          ), (){}),
-      body: Column(
+      appBar: AppBarConstant(isLeading: false, (){}),
+      body: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Center(

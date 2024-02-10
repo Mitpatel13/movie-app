@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:logger/logger.dart';
 import 'package:shinestreamliveapp/data/models/homebannermodel.dart';
 import 'package:shinestreamliveapp/data/repository/homerepository.dart';
@@ -137,33 +138,11 @@ class _ViewAllMovieState extends BaseScreen<ViewAllMovie>  with SingleTickerProv
     return Scaffold(
       appBar: AppBarConstant(
           isLeading: true,
-          InkWell(
-            onTap: () {},
-            child: Padding(
-                padding: const EdgeInsets.only(right: 15, top: 10),
-                child: Icon(
-                  Icons.language_outlined,
-                  color: ColorConstantss.red,
-                )),
-          ),
              (){Navigator.pop(context);}),
 
     body: SafeArea(
       child: Column(mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          // Padding(
-          //   padding: EdgeInsets.symmetric(horizontal: 18),
-          //   child: Row(mainAxisAlignment: MainAxisAlignment.start,
-          //     children: [
-          //       Text(widget.category,style: TextStyle(
-          //         fontFamily: 'GeoBook',
-          //         fontSize: 14,
-          //         color: ColorConstantss.white,
-          //         fontWeight: FontWeight.w500,
-          //       ),),
-          //     ],
-          //   ),
-          // ),
           actionModel.isEmpty ? Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -176,31 +155,30 @@ class _ViewAllMovieState extends BaseScreen<ViewAllMovie>  with SingleTickerProv
           ):
           Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding:  EdgeInsets.all(8.w),
             child: GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 10,
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent:130.h,
+                mainAxisExtent: 140.h,
+            // SliverGridDelegateWithFixedCrossAxisCount(
+            // crossAxisCount: 3,
+            crossAxisSpacing: 10.w,
               // maxCrossAxisExtent: 150,
-            mainAxisSpacing: 10,
-                childAspectRatio:0.7
+            mainAxisSpacing: 10.w
+                ,
+                childAspectRatio:0.5.h
                 ),
                 itemCount: actionModel.length,
                 itemBuilder: (context, index) {
                 return
-                  Container(
-                    // color: ColorConstants.red,
-                    // height: 300,
-                    // height: systemHeight(20, context),
-                    // width: 100,
-                    // padding: EdgeInsets.symmetric(horizontal: 15),
-                    child:
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      // mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        InkWell(
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    // mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height:125.h,
+                        child: InkWell(
                           onTap:(){
                             Navigator.push(
                                 context,
@@ -208,37 +186,27 @@ class _ViewAllMovieState extends BaseScreen<ViewAllMovie>  with SingleTickerProv
                                   builder: (context) => MovieDetails(actionModel[index].videoId??""),
                                 ));
                           },
-                          child:CatchImageWithOutWidth(height:systemHeight(15, context) ,
-                            imageUrl: "${Globals.imageBaseUrl}"+ actionModel[index].thumbnail!, isFree: false,),
-                          // Container(
-                          //
-                          //
-                          //   height: systemHeight(15, context),
-                          //   // width: 80,
-                          //   decoration: BoxDecoration(
-                          //       borderRadius: BorderRadius.circular(8),
-                          //       image: DecorationImage(fit: BoxFit.fill,image:
-                          //       NetworkImage("${Globals.imageBaseUrl}"+ actionModel[index].thumbnail!,),
-                          //       )),
-                          // ),
+                          child:CatchImageWithOutWidth(
+                            // height:systemHeight(14.h, context) ,
+                            imageUrl: "${Globals.imageBaseUrl}"+ actionModel[index].thumbnail!, isFree: "0",),
                         ),
-                        SizedBox(height: 5.0),
-                        Expanded(
-                          child: Text(
-                            // "modelmodelmodelmodascefelmoddffasfwel",
-                            actionModel[index].title??"",
-                            maxLines: 2,softWrap: true,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: 'GeoBook',
-                              fontSize: 12,
-                              color: ColorConstantss.white,
-                              fontWeight: FontWeight.normal,
-                            ),
+                      ),
+                      SizedBox(height:1),
+                      Expanded(
+                        child: Text(
+                          // "modelmodelmodelmodascefelmoddffasfwel",
+                          actionModel[index].title??"",
+                          maxLines:1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'GeoBook',
+                            fontSize: 10.sp,
+                            color: ColorConstantss.white,
+                            fontWeight: FontWeight.normal,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   );
                 }),
           ),

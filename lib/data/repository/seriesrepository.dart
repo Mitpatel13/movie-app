@@ -1,18 +1,9 @@
-import 'dart:convert';
 import 'dart:developer';
-import 'package:dio/dio.dart';
-import 'package:shinestreamliveapp/data/models/checkloginmodel.dart';
-import 'package:shinestreamliveapp/data/models/policymodel.dart';
-import 'package:shinestreamliveapp/data/services/homeservice.dart';
 
 import '../../../di/locator.dart';
-import '../services/loginservice.dart';
-
-import '../exceptions/dioexceptions.dart';
 import '../services/seriesservice.dart';
 
 class SeriesRepository {
-  // var loginService = getIt<LoginService>();
   var seriesService = getIt<SeriesService>();
   Future<dynamic> seriesBanner() async {
     try {
@@ -27,8 +18,9 @@ class SeriesRepository {
     try {
       var response = await seriesService.seriesList();
       return response;
-    } catch (e) {
+    } catch (e,t) {
       log("Series List API EXCEPTION : $e");
+      log("Series List API TRACE : $t");
       throw e;
     }
   }

@@ -72,3 +72,19 @@ class AboutError extends ProfileState {
   @override
   List<Object?> get props =>[error];
 }
+class LogOutLoading extends ProfileState {
+  @override
+  List<Object?> get props => [];
+}
+class  LogOutLoaded extends ProfileState {
+  final response;
+  const LogOutLoaded(this.response);
+  @override
+  List<Object?> get props =>[response];
+}
+class LogOutError extends ProfileState {
+  final error;
+  LogOutError(this.error);
+  @override
+  List<Object?> get props =>[error];
+}
